@@ -5,8 +5,8 @@ set -euo pipefail
 CURRENT_DIR=$(cd "$(dirname "$0")" && pwd)
 
 # Default values
-ONNXRUNTIME_VERSION="${1:-1.20.1}"
-ONNXRUNTIME_GPU="${2:-0}"
+ONNXRUNTIME_VERSION="${1:-1.19.2}"
+ONNXRUNTIME_GPU="${2:-1}"
 
 # Function to display usage
 usage() {
