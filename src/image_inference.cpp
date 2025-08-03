@@ -44,11 +44,11 @@
 // Uncomment the version
 //#define YOLO5 // Uncomment for YOLOv5
 //#define YOLO7 // Uncomment for YOLOv7
-//#define YOLO8 // Uncomment for YOLOv8
+#define YOLO8 // Uncomment for YOLOv8
 //#define YOLO9 // Uncomment for YOLOv9
 //#define YOLO10 // Uncomment for YOLOv10
 //#define YOLO11 // Uncomment for YOLOv11
-#define YOLO12 // Uncomment for YOLOv12
+// #define YOLO12 // Uncomment for YOLOv12
 
 #ifdef YOLO5
     #include "det/YOLO5.hpp"
@@ -57,7 +57,7 @@
     #include "det/YOLO7.hpp"
 #endif
 #ifdef YOLO8
-    #include "det/YOLO8.hpp"
+    #include "class/YOLO8CLASS.hpp"
 #endif
 #ifdef YOLO9
     #include "det/YOLO9.hpp"
@@ -76,8 +76,8 @@
 int main(){
 
     // Paths to the model, labels, and test image
-    const std::string labelsPath = "../models/coco.names";
-    const std::string imagePath = "../data/dog.jpg";           // Primary image path
+    const std::string labelsPath = "../models/ImageNet.names";
+    const std::string imagePath = "../data/dog3.jpg";           // Primary image path
 
     // Uncomment the desired image path for testing
     // const std::string imagePath = "../data/happy_dogs.jpg";  // Alternate image
@@ -91,7 +91,7 @@ int main(){
         const std::string modelPath = "../models/yolo7-tiny.onnx";
     #endif
     #ifdef YOLO8
-        std::string modelPath = "../models/yolo8n.onnx";
+        std::string modelPath = "../models/yolov8n-cls.onnx";
     #endif
     #ifdef YOLO9
         const std::string modelPath = "../models/yolov9s.onnx";
@@ -108,7 +108,7 @@ int main(){
 
 
 
-    // Initialize the YOLO detector with the chosen model and labels
+    // Initialize the YOLO detector or classifier with the chosen model and labels
     bool isGPU = true; // Set to false for CPU processing
     #ifdef YOLO5
         YOLO5Detector detector(modelPath, labelsPath, isGPU);
@@ -117,7 +117,8 @@ int main(){
         YOLO7Detector detector(modelPath, labelsPath, isGPU);
     #endif
     #ifdef YOLO8
-        YOLO8Detector detector(modelPath, labelsPath, isGPU);
+        // YOLO8Detector detector(modelPath, labelsPath, isGPU);
+        YOLO8Classifier detector(modelPath, labelsPath, isGPU, cv::Size(224, 224)); // Adjust input shape as needed
     #endif
     #ifdef YOLO9
         YOLO9Detector detector(modelPath, labelsPath, isGPU);
@@ -145,7 +146,8 @@ int main(){
 
     // Detect objects in the image and measure execution time
     auto start = std::chrono::high_resolution_clock::now();
-    std::vector<Detection> results = detector.detect(image);
+    // std::vector<Detection> results = detector.detect(image);
+    auto results = detector.classify(image); // Use classify for YOLO8Classifier
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::high_resolution_clock::now() - start);
 
@@ -153,11 +155,22 @@ int main(){
 
 
     // Draw bounding boxes on the image
-    detector.drawBoundingBox(image, results); // simple bbox drawing
+    // detector.drawBoundingBox(image, results); // simple bbox drawing
+
+    // Display classification result on the image
+    detector.drawResult(image, results); // Use drawResult for YOLO8Classifier
     // detector.drawBoundingBoxMask(image, results); // Uncomment for mask drawing
 
     // Display the image
-    cv::imshow("Detections", image);
+    // cv::imshow("Detections", image);
+
+    // print the classification result
+    std::cout << "Classification Result: " << std::endl;
+    std::cout << "Class ID: " << results.classId << std::endl;
+    std::cout << "Confidence: " << results.confidence * 100 << "%" << std::endl;
+    std::cout << "Class Name: " << results.className << std::endl;
+    cv::imshow("Classification Result", image); // Show the image with classification result
+    std::cout << "Press any key to close the window..." << std::endl;
     cv::waitKey(0); // Wait for a key press to close the window
 
     return 0;

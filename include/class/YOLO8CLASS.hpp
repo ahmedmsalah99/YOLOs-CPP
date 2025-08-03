@@ -238,8 +238,8 @@ private:
 
     std::vector<std::string> inputNames_; // Input node names
     std::vector<std::string> outputNames_; // Output node names
-    std::vector<std::unique_ptr<char[]>> inputNodeNameAllocatedStrings_;
-    std::vector<std::unique_ptr<char[]>> outputNodeNameAllocatedStrings_;
+    std::vector<std::string> inputNodeNamesRaw_;
+    std::vector<std::string> outputNodeNamesRaw_;
 
     cv::Size inputImageShape_; // Target input shape for the model
     bool isDynamicInputShape_{false}; // Flag to indicate if the input shape is dynamic
@@ -256,7 +256,10 @@ private:
 // Implementation of YOLO8Classifier constructor
 YOLO8Classifier::YOLO8Classifier(const std::string &modelPath, const std::string &labelsPath,
                                    bool useGPU, const cv::Size& targetInputShape)
-    : inputImageShape_(targetInputShape) {
+    : env_(ORT_LOGGING_LEVEL_WARNING, "ONNX_CLASSIFICATION_ENV"),
+      sessionOptions_(),
+      inputImageShape_(targetInputShape),
+      session_(nullptr) {
     env_ = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "ONNX_CLASSIFICATION_ENV");
     sessionOptions_ = Ort::SessionOptions();
 
@@ -279,8 +282,8 @@ YOLO8Classifier::YOLO8Classifier(const std::string &modelPath, const std::string
     session_ = Ort::Session(env_, modelPath.c_str(), sessionOptions_);
     DEBUG_PRINT("ONNX model loaded from: " << modelPath);
     Ort::AllocatorWithDefaultOptions allocator;
-    inputNodeNameAllocatedStrings_.clear();
-    outputNodeNameAllocatedStrings_.clear();
+    inputNodeNamesRaw_.clear();
+    outputNodeNamesRaw_.clear();
     inputNames_.clear();
     outputNames_.clear();
     numInputNodes_ = session_.GetInputCount();
@@ -288,13 +291,15 @@ YOLO8Classifier::YOLO8Classifier(const std::string &modelPath, const std::string
     DEBUG_PRINT("Model has " << numInputNodes_ << " input nodes and " << numOutputNodes_ << " output nodes.");
     for (size_t i = 0; i < numInputNodes_; ++i) {
         auto input_node_name = session_.GetInputNameAllocated(i, allocator);
-        inputNodeNameAllocatedStrings_.emplace_back(std::move(input_node_name));
-        inputNames_.push_back(inputNodeNameAllocatedStrings_.back().get());
+        std::string nameStr(input_node_name.get());
+        inputNodeNamesRaw_.emplace_back(std::move(nameStr));
+        inputNames_.push_back(inputNodeNamesRaw_.back().c_str());
     }
     for (size_t i = 0; i < numOutputNodes_; ++i) {
         auto output_node_name = session_.GetOutputNameAllocated(i, allocator);
-        outputNodeNameAllocatedStrings_.emplace_back(std::move(output_node_name));
-        outputNames_.push_back(outputNodeNameAllocatedStrings_.back().get());
+        std::string nameStr(output_node_name.get());
+        outputNodeNamesRaw_.emplace_back(std::move(nameStr));
+        outputNames_.push_back(outputNodeNamesRaw_.back().c_str());
     }
     Ort::TypeInfo inputTypeInfo = session_.GetInputTypeInfo(0);
     auto inputTensorInfo = inputTypeInfo.GetTensorTypeAndShapeInfo();
@@ -523,10 +528,10 @@ ClassificationResult YOLO8Classifier::classify(const cv::Mat &image) {
     try {
         outputTensors = session_.Run(
             Ort::RunOptions{nullptr},
-            inputNames_.data(),
+            reinterpret_cast<const char* const*>(inputNames_.data()),
             &inputTensor,
             numInputNodes_,
-            outputNames_.data(),
+            reinterpret_cast<const char* const*>(outputNames_.data()),
             numOutputNodes_
         );
     } catch (const Ort::Exception& e) {
