@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/<user>/<repo>:tag   # <-- replace with your prebuilt image
+      image: ghcr.io/ahmedmsalah99/ubuntu_cpu:latest   # <-- replace with your prebuilt image
 
     steps:
       - name: Checkout repository
