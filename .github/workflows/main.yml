@@ -5,7 +5,9 @@ on:
     branches: ["main", "dev","CI_integration"]
   pull_request:
     branches: ["main", "dev"]
-
+permissions:
+  contents: read
+  packages: read
 jobs:
   build:
     runs-on: ubuntu-latest
