@@ -11,7 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/ahmedmsalah99/ubuntu_cpu:latest   # <-- replace with your prebuilt image
-
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
