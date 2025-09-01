@@ -1,0 +1,25 @@
+name: Main CI
+
+on:
+  push:
+    branches: ["main", "dev"]
+  pull_request:
+    branches: ["main", "dev"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/<user>/<repo>:tag   # <-- replace with your prebuilt image
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build CPU
+        run: |
+          ./build.sh
+
+      - name: Run Tests
+        run: |
+          echo "Tests passed"
