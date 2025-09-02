@@ -23,7 +23,6 @@ jobs:
             image: ghcr.io/ahmedmsalah99/ubuntu_gpu:latest
             build: ubuntu_gpu
 
-
     container:
       image: ${{ matrix.image }}
       credentials:
@@ -35,14 +34,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Fetch and unzip cpu models
-      	if: matrix.build == 'ubuntu_cpu'
+        if: matrix.build == 'ubuntu_cpu'
         run: |
           megadl https://mega.nz/file/PlwFGaTS#86gQt_qRki0p0E9-QeWkwX27x3KHGw1V5hrWWv4nwGU
           unzip -o yolo_cpu_models.zip -d models
           ls -R models
           
       - name: Fetch and unzip gpu models
-      	if: matrix.build == 'ubuntu_gpu'
+        if: matrix.build == 'ubuntu_gpu'
         run: |
           megadl https://mega.nz/file/PlwFGaTS#86gQt_qRki0p0E9-QeWkwX27x3KHGw1V5hrWWv4nwGU
           unzip -o yolo_cpu_models.zip -d models
@@ -57,7 +56,6 @@ jobs:
       - name: Build GPU
         if: matrix.build == 'ubuntu_gpu'
         run: ./build.sh 1.20.1 1
-
 
       # Shared test step
       - uses: ./.github/actions/run-tests
