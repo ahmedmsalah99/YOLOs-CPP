@@ -5,25 +5,59 @@ on:
     branches: ["main", "dev","CI_integration"]
   pull_request:
     branches: ["main", "dev"]
+
 permissions:
   contents: read
   packages: read
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            image: ghcr.io/ahmedmsalah99/ubuntu_cpu:latest
+            build: ubuntu_cpu
+          - runner: ubuntu-latest
+            image: ghcr.io/ahmedmsalah99/ubuntu_gpu:latest
+            build: ubuntu_gpu
+
+
     container:
-      image: ghcr.io/ahmedmsalah99/ubuntu_cpu:latest   # <-- replace with your prebuilt image
+      image: ${{ matrix.image }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build CPU
+      - name: Fetch and unzip cpu models
+      	if: matrix.build == 'ubuntu_cpu'
         run: |
-          ./build.sh
+          megadl https://mega.nz/file/PlwFGaTS#86gQt_qRki0p0E9-QeWkwX27x3KHGw1V5hrWWv4nwGU
+          unzip -o yolo_cpu_models.zip -d models
+          ls -R models
+          
+      - name: Fetch and unzip gpu models
+      	if: matrix.build == 'ubuntu_gpu'
+        run: |
+          megadl https://mega.nz/file/PlwFGaTS#86gQt_qRki0p0E9-QeWkwX27x3KHGw1V5hrWWv4nwGU
+          unzip -o yolo_cpu_models.zip -d models
+          ls -R models
 
-      - name: Run Tests
-        run: |
-          echo "Tests passed"
+      # CPU build
+      - name: Build CPU
+        if: matrix.build == 'ubuntu_cpu'
+        run: ./build.sh 1.20.1 0
+
+      # GPU build
+      - name: Build GPU
+        if: matrix.build == 'ubuntu_gpu'
+        run: ./build.sh 1.20.1 1
+
+
+      # Shared test step
+      - uses: ./.github/actions/run-tests
